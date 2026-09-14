@@ -40,10 +40,10 @@ proxies = {
 } if settings.HTTP_PROXY or settings.HTTPS_PROXY else None
 
 
-def check_product_exists(product_name: str, logger) -> bool:
+def check_product_exists(product_name: str, logger) -> bool | None:
     """
     Check if a product with the given name already exists in DefectDojo.
-    Returns True if the product exists, False otherwise.
+    Returns True if the product exists, False if it does not, or None if unknown.
     """
     headers: dict = {
         "Authorization": "Token " + settings.DEFECT_DOJO_API_KEY,
@@ -70,8 +70,73 @@ def check_product_exists(product_name: str, logger) -> bool:
             return False
 
     except Exception as err:
-        logger.warning(f"Could not check if product exists: {err}. Assuming it doesn't exist.")
-        return False
+        logger.warning(f"Could not check if product exists: {err}")
+        return None
+
+
+def get_product_type_id(product_type_name: str, headers: dict, logger) -> int | None:
+    """Return the DefectDojo product type ID for a configured product type name."""
+    try:
+        response = requests.get(
+            settings.DEFECT_DOJO_URL + "/api/v2/product_types/",
+            headers=headers,
+            params={"name": product_type_name},
+            verify=True,
+            proxies=proxies,
+        )
+        response.raise_for_status()
+        product_types = response.json().get("results", [])
+
+        if product_types:
+            return product_types[0]["id"]
+
+        logger.warning(
+            f"Product type '{product_type_name}' does not exist yet in DefectDojo"
+        )
+        return None
+    except Exception as err:
+        logger.warning(f"Could not resolve product type '{product_type_name}': {err}")
+        return None
+
+
+def create_product(
+    product_name: str, product_type_name: str, tags: list[str], headers: dict, logger
+) -> None:
+    """Create a Product with the configured tags and inheritance settings."""
+    product_type_id = get_product_type_id(product_type_name, headers, logger)
+    if product_type_id is None:
+        raise ValueError(f"Could not resolve product type '{product_type_name}'")
+
+    product_data: dict = {
+        "name": product_name,
+        "description": "",
+        "prod_type": product_type_id,
+        "enable_product_tag_inheritance": (
+            settings.DEFECT_DOJO_ENABLE_PRODUCT_TAG_INHERITANCE
+        ),
+    }
+    if settings.DEFECT_DOJO_APPLY_TAGS_TO_PRODUCT:
+        product_data["tags"] = tags
+
+    try:
+        response = requests.post(
+            settings.DEFECT_DOJO_URL + "/api/v2/products/",
+            headers=headers,
+            json=product_data,
+            verify=True,
+            proxies=proxies,
+        )
+        response.raise_for_status()
+        logger.info(f"Created Product '{product_name}' in DefectDojo")
+    except HTTPError as err:
+        if (
+            err.response is not None
+            and err.response.status_code in (400, 409)
+            and check_product_exists(product_name, logger)
+        ):
+            logger.info(f"Product '{product_name}' was created concurrently")
+            return
+        raise
 
 
 def check_allowed_reports(report: str):
@@ -275,6 +340,37 @@ for report in settings.REPORTS:
         # Check if product already exists to avoid product_type conflicts
         product_exists = check_product_exists(_DEFECT_DOJO_PRODUCT_NAME, logger)
 
+        should_configure_new_product = (
+            settings.DEFECT_DOJO_AUTO_CREATE_CONTEXT
+            and (
+                settings.DEFECT_DOJO_APPLY_TAGS_TO_PRODUCT
+                or settings.DEFECT_DOJO_ENABLE_PRODUCT_TAG_INHERITANCE
+            )
+        )
+
+        if product_exists is None and should_configure_new_product:
+            c.labels("failed").inc()
+            raise kopf.TemporaryError(
+                "Could not determine whether Product exists. Retrying in 60 seconds",
+                delay=60,
+            )
+
+        if product_exists is False and should_configure_new_product:
+            try:
+                create_product(
+                    _DEFECT_DOJO_PRODUCT_NAME,
+                    _DEFECT_DOJO_PRODUCT_TYPE_NAME,
+                    _DEFECT_DOJO_TAGS,
+                    headers,
+                    logger,
+                )
+            except Exception as err:
+                c.labels("failed").inc()
+                raise kopf.TemporaryError(
+                    f"Could not create Product: {err}. Retrying in 60 seconds", delay=60
+                )
+            product_exists = True
+
         data: dict = {
             "active": settings.DEFECT_DOJO_ACTIVE,
             "verified": settings.DEFECT_DOJO_VERIFIED,
@@ -292,11 +388,16 @@ for report in settings.REPORTS:
             "test_title": _DEFECT_DOJO_TEST_TITLE,
             "do_not_reactivate": settings.DEFECT_DOJO_DO_NOT_REACTIVATE,
             "tags": _DEFECT_DOJO_TAGS,
+            "apply_tags_to_findings": settings.DEFECT_DOJO_APPLY_TAGS_TO_FINDINGS,
+            "apply_tags_to_endpoints": settings.DEFECT_DOJO_APPLY_TAGS_TO_ENDPOINTS,
         }
+
+        if settings.DEFECT_DOJO_VERSION:
+            data["version"] = settings.DEFECT_DOJO_VERSION
 
         # Only include product_type_name if product doesn't exist yet
         # This prevents conflicts when a product is already assigned to a different product type
-        if not product_exists and _DEFECT_DOJO_PRODUCT_TYPE_NAME:
+        if product_exists is False and _DEFECT_DOJO_PRODUCT_TYPE_NAME:
             data["product_type_name"] = _DEFECT_DOJO_PRODUCT_TYPE_NAME
             logger.info(f"Including product_type_name: {_DEFECT_DOJO_PRODUCT_TYPE_NAME}")
         else:

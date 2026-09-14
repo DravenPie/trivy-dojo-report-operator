@@ -49,8 +49,29 @@ class HelmTagsTest(unittest.TestCase):
     def test_default_tags_values_are_exported_as_environment_variables(self) -> None:
         environment = self.deployment_environment(self.render_chart())
 
-        self.assertEqual(environment["DEFECT_DOJO_TAGS"], "")
-        self.assertEqual(environment["DEFECT_DOJO_EVAL_TAGS"], "false")
+        self.assertEqual(
+            {
+                name: environment[name]
+                for name in (
+                    "DEFECT_DOJO_TAGS",
+                    "DEFECT_DOJO_EVAL_TAGS",
+                    "DEFECT_DOJO_APPLY_TAGS_TO_FINDINGS",
+                    "DEFECT_DOJO_APPLY_TAGS_TO_ENDPOINTS",
+                    "DEFECT_DOJO_VERSION",
+                    "DEFECT_DOJO_APPLY_TAGS_TO_PRODUCT",
+                    "DEFECT_DOJO_ENABLE_PRODUCT_TAG_INHERITANCE",
+                )
+            },
+            {
+                "DEFECT_DOJO_TAGS": "",
+                "DEFECT_DOJO_EVAL_TAGS": "false",
+                "DEFECT_DOJO_APPLY_TAGS_TO_FINDINGS": "false",
+                "DEFECT_DOJO_APPLY_TAGS_TO_ENDPOINTS": "false",
+                "DEFECT_DOJO_VERSION": "",
+                "DEFECT_DOJO_APPLY_TAGS_TO_PRODUCT": "false",
+                "DEFECT_DOJO_ENABLE_PRODUCT_TAG_INHERITANCE": "false",
+            },
+        )
 
     def test_evaluated_tags_expression_is_exported_without_changes(self) -> None:
         expression = textwrap.dedent("""\
@@ -66,6 +87,11 @@ class HelmTagsTest(unittest.TestCase):
             "      defectDojoTags: |-\n"
             f"{textwrap.indent(expression, '        ')}\n"
             '      defectDojoEvalTags: "true"\n'
+            '      defectDojoApplyTagsToFindings: "true"\n'
+            '      defectDojoApplyTagsToEndpoints: "true"\n'
+            '      defectDojoVersion: "v1.2.3"\n'
+            '      defectDojoApplyTagsToProduct: "true"\n'
+            '      defectDojoEnableProductTagInheritance: "true"\n'
         )
 
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -77,6 +103,13 @@ class HelmTagsTest(unittest.TestCase):
 
         self.assertEqual(environment["DEFECT_DOJO_TAGS"], expression)
         self.assertEqual(environment["DEFECT_DOJO_EVAL_TAGS"], "true")
+        self.assertEqual(environment["DEFECT_DOJO_APPLY_TAGS_TO_FINDINGS"], "true")
+        self.assertEqual(environment["DEFECT_DOJO_APPLY_TAGS_TO_ENDPOINTS"], "true")
+        self.assertEqual(environment["DEFECT_DOJO_VERSION"], "v1.2.3")
+        self.assertEqual(environment["DEFECT_DOJO_APPLY_TAGS_TO_PRODUCT"], "true")
+        self.assertEqual(
+            environment["DEFECT_DOJO_ENABLE_PRODUCT_TAG_INHERITANCE"], "true"
+        )
 
     def test_distributed_manifest_matches_the_canonical_render(self) -> None:
         self.assertEqual(
