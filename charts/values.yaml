@@ -67,8 +67,8 @@ operator:
       https_proxy: ""
       logLevel: "INFO"
     image:
-      repository: ghcr.io/telekom-mms/docker-trivy-dojo-operator
-      tag: 0.11.3
+      repository: ghcr.io/dravenpie/docker-trivy-dojo-operator
+      tag: 0.11.4
     imagePullSecrets: []
     transformation:
       enabled: false
