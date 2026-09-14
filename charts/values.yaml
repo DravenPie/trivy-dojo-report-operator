@@ -51,6 +51,7 @@ operator:
       defectDojoApplyTagsToFindings: "false"
       defectDojoApplyTagsToEndpoints: "false"
       defectDojoVersion: ""
+      defectDojoEvalVersion: "false"
       defectDojoApplyTagsToProduct: "false"
       defectDojoEnableProductTagInheritance: "false"
       defectDojoMinimumSeverity: Info
@@ -67,7 +68,7 @@ operator:
       logLevel: "INFO"
     image:
       repository: ghcr.io/telekom-mms/docker-trivy-dojo-operator
-      tag: 0.11.2
+      tag: 0.11.3
     imagePullSecrets: []
     transformation:
       enabled: false

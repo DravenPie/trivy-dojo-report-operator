@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.11.3](https://github.com/DravenPie/trivy-dojo-report-operator/tree/0.11.3) (2026-09-14)
+
+[Full Changelog](https://github.com/DravenPie/trivy-dojo-report-operator/compare/0.11.2...0.11.3)
+
+**Implemented enhancements:**
+
+- Add support for evaluating DefectDojo versions from Helm values.
+
 ## [0.11.1](https://github.com/telekom-mms/trivy-dojo-report-operator/tree/0.11.1) (2026-05-16)
 
 [Full Changelog](https://github.com/telekom-mms/trivy-dojo-report-operator/compare/0.11.0...0.11.1)

@@ -58,6 +58,7 @@ class HelmTagsTest(unittest.TestCase):
                     "DEFECT_DOJO_APPLY_TAGS_TO_FINDINGS",
                     "DEFECT_DOJO_APPLY_TAGS_TO_ENDPOINTS",
                     "DEFECT_DOJO_VERSION",
+                    "DEFECT_DOJO_EVAL_VERSION",
                     "DEFECT_DOJO_APPLY_TAGS_TO_PRODUCT",
                     "DEFECT_DOJO_ENABLE_PRODUCT_TAG_INHERITANCE",
                 )
@@ -68,6 +69,7 @@ class HelmTagsTest(unittest.TestCase):
                 "DEFECT_DOJO_APPLY_TAGS_TO_FINDINGS": "false",
                 "DEFECT_DOJO_APPLY_TAGS_TO_ENDPOINTS": "false",
                 "DEFECT_DOJO_VERSION": "",
+                "DEFECT_DOJO_EVAL_VERSION": "false",
                 "DEFECT_DOJO_APPLY_TAGS_TO_PRODUCT": "false",
                 "DEFECT_DOJO_ENABLE_PRODUCT_TAG_INHERITANCE": "false",
             },
@@ -90,6 +92,7 @@ class HelmTagsTest(unittest.TestCase):
             '      defectDojoApplyTagsToFindings: "true"\n'
             '      defectDojoApplyTagsToEndpoints: "true"\n'
             '      defectDojoVersion: "v1.2.3"\n'
+            '      defectDojoEvalVersion: "true"\n'
             '      defectDojoApplyTagsToProduct: "true"\n'
             '      defectDojoEnableProductTagInheritance: "true"\n'
         )
@@ -106,6 +109,7 @@ class HelmTagsTest(unittest.TestCase):
         self.assertEqual(environment["DEFECT_DOJO_APPLY_TAGS_TO_FINDINGS"], "true")
         self.assertEqual(environment["DEFECT_DOJO_APPLY_TAGS_TO_ENDPOINTS"], "true")
         self.assertEqual(environment["DEFECT_DOJO_VERSION"], "v1.2.3")
+        self.assertEqual(environment["DEFECT_DOJO_EVAL_VERSION"], "true")
         self.assertEqual(environment["DEFECT_DOJO_APPLY_TAGS_TO_PRODUCT"], "true")
         self.assertEqual(
             environment["DEFECT_DOJO_ENABLE_PRODUCT_TAG_INHERITANCE"], "true"

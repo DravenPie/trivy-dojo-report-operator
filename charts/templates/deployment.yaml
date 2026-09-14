@@ -105,6 +105,9 @@ spec:
         - name: DEFECT_DOJO_VERSION
           value: {{ quote .Values.operator.trivyDojoReportOperator.env.defectDojoVersion
             }}
+        - name: DEFECT_DOJO_EVAL_VERSION
+          value: {{ quote .Values.operator.trivyDojoReportOperator.env.defectDojoEvalVersion
+            }}
         - name: DEFECT_DOJO_APPLY_TAGS_TO_PRODUCT
           value: {{ quote .Values.operator.trivyDojoReportOperator.env.defectDojoApplyTagsToProduct
             }}

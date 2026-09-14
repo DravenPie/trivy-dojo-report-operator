@@ -36,6 +36,7 @@ class HandlerTagsTest(unittest.TestCase):
             DEFECT_DOJO_AUTO_CREATE_CONTEXT=True,
             DEFECT_DOJO_ENABLE_PRODUCT_TAG_INHERITANCE=True,
             DEFECT_DOJO_EVAL_TAGS=False,
+            DEFECT_DOJO_EVAL_VERSION=False,
             DEFECT_DOJO_PRODUCT_NAME="new-product",
             DEFECT_DOJO_PRODUCT_TYPE_NAME="Platform",
             DEFECT_DOJO_TAGS="team:platform,env:hml",
@@ -143,6 +144,28 @@ class HandlerTagsTest(unittest.TestCase):
         self.assertEqual(
             post.call_args.args[0],
             "https://defectdojo.example.test/api/v2/reimport-scan/",
+        )
+
+    def test_evaluates_version_before_reimport(self) -> None:
+        handlers.settings.DEFECT_DOJO_VERSION = "meta['name']"
+        handlers.settings.DEFECT_DOJO_EVAL_VERSION = True
+
+        with (
+            patch.object(
+                handlers.requests,
+                "get",
+                return_value=Response({"count": 1}),
+            ),
+            patch.object(
+                handlers.requests,
+                "post",
+                return_value=Response({}),
+            ) as post,
+        ):
+            self.send_report()
+
+        self.assertEqual(
+            post.call_args.kwargs["data"]["version"], "synthetic-report"
         )
 
 

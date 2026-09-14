@@ -323,6 +323,12 @@ for report in settings.REPORTS:
             else (list(filter(None, settings.DEFECT_DOJO_TAGS.split(","))))
         )
 
+        _DEFECT_DOJO_VERSION = (
+            eval(settings.DEFECT_DOJO_VERSION)
+            if settings.DEFECT_DOJO_EVAL_VERSION
+            else settings.DEFECT_DOJO_VERSION
+        )
+
         logger.debug(f"DefectDojo Config - Engagement: {_DEFECT_DOJO_ENGAGEMENT_NAME}, Test: {_DEFECT_DOJO_TEST_TITLE}, Service: {_DEFECT_DOJO_SERVICE_NAME}")
         logger.debug(f"Transformation Metadata - base_image: {full_object.get('meta_base_image')}, tag: {full_object.get('meta_tag')}")
 
@@ -392,8 +398,8 @@ for report in settings.REPORTS:
             "apply_tags_to_endpoints": settings.DEFECT_DOJO_APPLY_TAGS_TO_ENDPOINTS,
         }
 
-        if settings.DEFECT_DOJO_VERSION:
-            data["version"] = settings.DEFECT_DOJO_VERSION
+        if _DEFECT_DOJO_VERSION:
+            data["version"] = _DEFECT_DOJO_VERSION
 
         # Only include product_type_name if product doesn't exist yet
         # This prevents conflicts when a product is already assigned to a different product type
