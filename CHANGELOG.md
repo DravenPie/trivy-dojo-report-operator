@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.11.5](https://github.com/DravenPie/trivy-dojo-report-operator/tree/0.11.5) (2026-09-15)
+
+[Full Changelog](https://github.com/DravenPie/trivy-dojo-report-operator/compare/0.11.4...0.11.5)
+
+**Fixed bugs:**
+
+- Send a non-empty, configurable Product description required by DefectDojo, with optional trusted expression evaluation.
+
 ## [0.11.4](https://github.com/DravenPie/trivy-dojo-report-operator/tree/0.11.4) (2026-09-14)
 
 [Full Changelog](https://github.com/DravenPie/trivy-dojo-report-operator/compare/0.11.3...0.11.4)

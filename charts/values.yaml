@@ -70,7 +70,7 @@ operator:
       logLevel: "INFO"
     image:
       repository: ghcr.io/dravenpie/docker-trivy-dojo-operator
-      tag: 0.11.4
+      tag: 0.11.5
     imagePullSecrets: []
     transformation:
       enabled: false
