@@ -59,6 +59,8 @@ class HelmTagsTest(unittest.TestCase):
                     "DEFECT_DOJO_APPLY_TAGS_TO_ENDPOINTS",
                     "DEFECT_DOJO_VERSION",
                     "DEFECT_DOJO_EVAL_VERSION",
+                    "DEFECT_DOJO_PRODUCT_DESCRIPTION",
+                    "DEFECT_DOJO_EVAL_PRODUCT_DESCRIPTION",
                     "DEFECT_DOJO_APPLY_TAGS_TO_PRODUCT",
                     "DEFECT_DOJO_ENABLE_PRODUCT_TAG_INHERITANCE",
                 )
@@ -70,6 +72,10 @@ class HelmTagsTest(unittest.TestCase):
                 "DEFECT_DOJO_APPLY_TAGS_TO_ENDPOINTS": "false",
                 "DEFECT_DOJO_VERSION": "",
                 "DEFECT_DOJO_EVAL_VERSION": "false",
+                "DEFECT_DOJO_PRODUCT_DESCRIPTION": (
+                    "Created by trivy-dojo-report-operator"
+                ),
+                "DEFECT_DOJO_EVAL_PRODUCT_DESCRIPTION": "false",
                 "DEFECT_DOJO_APPLY_TAGS_TO_PRODUCT": "false",
                 "DEFECT_DOJO_ENABLE_PRODUCT_TAG_INHERITANCE": "false",
             },
@@ -93,6 +99,8 @@ class HelmTagsTest(unittest.TestCase):
             '      defectDojoApplyTagsToEndpoints: "true"\n'
             '      defectDojoVersion: "v1.2.3"\n'
             '      defectDojoEvalVersion: "true"\n'
+            '      defectDojoProductDescription: "Custom product description"\n'
+            '      defectDojoEvalProductDescription: "true"\n'
             '      defectDojoApplyTagsToProduct: "true"\n'
             '      defectDojoEnableProductTagInheritance: "true"\n'
         )
@@ -110,6 +118,11 @@ class HelmTagsTest(unittest.TestCase):
         self.assertEqual(environment["DEFECT_DOJO_APPLY_TAGS_TO_ENDPOINTS"], "true")
         self.assertEqual(environment["DEFECT_DOJO_VERSION"], "v1.2.3")
         self.assertEqual(environment["DEFECT_DOJO_EVAL_VERSION"], "true")
+        self.assertEqual(
+            environment["DEFECT_DOJO_PRODUCT_DESCRIPTION"],
+            "Custom product description",
+        )
+        self.assertEqual(environment["DEFECT_DOJO_EVAL_PRODUCT_DESCRIPTION"], "true")
         self.assertEqual(environment["DEFECT_DOJO_APPLY_TAGS_TO_PRODUCT"], "true")
         self.assertEqual(
             environment["DEFECT_DOJO_ENABLE_PRODUCT_TAG_INHERITANCE"], "true"

@@ -37,7 +37,9 @@ class HandlerTagsTest(unittest.TestCase):
             DEFECT_DOJO_ENABLE_PRODUCT_TAG_INHERITANCE=True,
             DEFECT_DOJO_EVAL_TAGS=False,
             DEFECT_DOJO_EVAL_VERSION=False,
+            DEFECT_DOJO_EVAL_PRODUCT_DESCRIPTION=False,
             DEFECT_DOJO_PRODUCT_NAME="new-product",
+            DEFECT_DOJO_PRODUCT_DESCRIPTION="Synthetic product description",
             DEFECT_DOJO_PRODUCT_TYPE_NAME="Platform",
             DEFECT_DOJO_TAGS="team:platform,env:hml",
             DEFECT_DOJO_URL="https://defectdojo.example.test/",
@@ -88,12 +90,13 @@ class HandlerTagsTest(unittest.TestCase):
             product_request.kwargs["json"],
             {
                 "name": "new-product",
-                "description": "",
+                "description": "Synthetic product description",
                 "prod_type": 42,
                 "enable_product_tag_inheritance": True,
                 "tags": ["team:platform", "env:hml"],
             },
         )
+        self.assertGreaterEqual(len(product_request.kwargs["json"]["description"]), 1)
         self.assertEqual(
             reimport_request.args[0],
             "https://defectdojo.example.test/api/v2/reimport-scan/",
@@ -130,6 +133,32 @@ class HandlerTagsTest(unittest.TestCase):
             "https://defectdojo.example.test/api/v2/reimport-scan/",
         )
         self.assertNotIn("version", post.call_args.kwargs["data"])
+
+    def test_evaluates_product_description_before_creation(self) -> None:
+        handlers.settings.DEFECT_DOJO_PRODUCT_DESCRIPTION = "meta['name']"
+        handlers.settings.DEFECT_DOJO_EVAL_PRODUCT_DESCRIPTION = True
+
+        with (
+            patch.object(
+                handlers.requests,
+                "get",
+                side_effect=[
+                    Response({"count": 0}),
+                    Response({"count": 1, "results": [{"id": 42}]}),
+                ],
+            ),
+            patch.object(
+                handlers.requests,
+                "post",
+                side_effect=[Response({}), Response({})],
+            ) as post,
+        ):
+            self.send_report()
+
+        product_request, _ = post.call_args_list
+        self.assertEqual(
+            product_request.kwargs["json"]["description"], "synthetic-report"
+        )
 
     def test_does_not_create_product_when_auto_create_is_disabled(self) -> None:
         handlers.settings.DEFECT_DOJO_AUTO_CREATE_CONTEXT = False

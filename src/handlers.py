@@ -105,7 +105,12 @@ def get_product_type_id(product_type_name: str, headers: dict, logger) -> int | 
 
 
 def create_product(
-    product_name: str, product_type_name: str, tags: list[str], headers: dict, logger
+    product_name: str,
+    product_description: str,
+    product_type_name: str,
+    tags: list[str],
+    headers: dict,
+    logger,
 ) -> None:
     """Create a Product with the configured tags and inheritance settings."""
     product_type_id = get_product_type_id(product_type_name, headers, logger)
@@ -114,7 +119,7 @@ def create_product(
 
     product_data: dict = {
         "name": product_name,
-        "description": "",
+        "description": product_description,
         "prod_type": product_type_id,
         "enable_product_tag_inheritance": (
             settings.DEFECT_DOJO_ENABLE_PRODUCT_TAG_INHERITANCE
@@ -299,6 +304,12 @@ for report in settings.REPORTS:
             else settings.DEFECT_DOJO_PRODUCT_NAME
         )
 
+        _DEFECT_DOJO_PRODUCT_DESCRIPTION = (
+            eval(settings.DEFECT_DOJO_PRODUCT_DESCRIPTION)
+            if settings.DEFECT_DOJO_EVAL_PRODUCT_DESCRIPTION
+            else settings.DEFECT_DOJO_PRODUCT_DESCRIPTION
+        )
+
         _DEFECT_DOJO_PRODUCT_TYPE_NAME = (
             eval(settings.DEFECT_DOJO_PRODUCT_TYPE_NAME)
             if settings.DEFECT_DOJO_EVAL_PRODUCT_TYPE_NAME
@@ -370,6 +381,7 @@ for report in settings.REPORTS:
             try:
                 create_product(
                     _DEFECT_DOJO_PRODUCT_NAME,
+                    _DEFECT_DOJO_PRODUCT_DESCRIPTION,
                     _DEFECT_DOJO_PRODUCT_TYPE_NAME,
                     _DEFECT_DOJO_TAGS,
                     headers,
