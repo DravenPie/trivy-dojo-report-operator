@@ -40,6 +40,7 @@ class HandlerTagsTest(unittest.TestCase):
             DEFECT_DOJO_PRODUCT_NAME="new-product",
             DEFECT_DOJO_PRODUCT_TYPE_NAME="Platform",
             DEFECT_DOJO_TAGS="team:platform,env:hml",
+            DEFECT_DOJO_URL="https://defectdojo.example.test/",
             DEFECT_DOJO_VERSION="v1.2.3",
         )
         self.settings_patch.start()
@@ -62,7 +63,7 @@ class HandlerTagsTest(unittest.TestCase):
                     Response({"count": 0}),
                     Response({"count": 1, "results": [{"id": 42}]}),
                 ],
-            ),
+            ) as get,
             patch.object(
                 handlers.requests,
                 "post",
@@ -72,6 +73,13 @@ class HandlerTagsTest(unittest.TestCase):
             self.send_report()
 
         product_request, reimport_request = post.call_args_list
+        self.assertEqual(
+            [request.args[0] for request in get.call_args_list],
+            [
+                "https://defectdojo.example.test/api/v2/products/",
+                "https://defectdojo.example.test/api/v2/product_types/",
+            ],
+        )
         self.assertEqual(
             product_request.args[0],
             "https://defectdojo.example.test/api/v2/products/",

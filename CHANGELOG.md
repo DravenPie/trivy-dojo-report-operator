@@ -8,6 +8,10 @@
 
 - Publish the operator image to the DravenPie GitHub Container Registry namespace.
 
+**Fixed bugs:**
+
+- Normalize DefectDojo API URLs when the configured base URL ends with a slash.
+
 ## [0.11.3](https://github.com/DravenPie/trivy-dojo-report-operator/tree/0.11.3) (2026-09-14)
 
 [Full Changelog](https://github.com/DravenPie/trivy-dojo-report-operator/compare/0.11.2...0.11.3)
