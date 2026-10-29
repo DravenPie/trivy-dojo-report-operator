@@ -68,7 +68,7 @@ environment variables. TLS is verified and redirects are not followed.
 
 | Key | Required | Meaning |
 |---|---|---|
-| `namespaces` | yes | Kubernetes namespace (of the `SbomReport`) to identity. Per entry: `namespace` (project prefix, `[A-Za-z0-9._-]`), `env` (project version, any non-empty string), `productType` (DefectDojo Product Type name), `environment` (DefectDojo environment name), optional `tags` (templates, default `["{env}", "{namespace}"]`), optional `aclTeam` (Dependency-Track team name; absent skips the ACL) |
+| `namespaces` | yes | Kubernetes namespace (of the `SbomReport`) to identity. Per entry: `namespace` (project name prefix, `[A-Za-z0-9._-]`), `env` (project name suffix, any non-empty string), `productType` (DefectDojo Product Type name), `environment` (DefectDojo environment name), optional `tags` (templates, default `["{env}", "{namespace}"]`), optional `aclTeam` (Dependency-Track team name; absent skips the ACL) |
 | `registries` | no | Exact values of `report.registry.server` that are eligible. Absent or `[]` means all registries |
 | `repositories` | no | `"<k8s namespace>/<repository>"` of a mapped namespace; overrides `name` and/or `namespace` |
 | `exclude` | no | Label key to a non-empty list of values; a report whose label has one of the values is never sent. The label is on the report only if Trivy Operator copies it from the workload (Trivy Operator Helm value `trivyOperator.reportResourceLabels`, a comma-separated list of label keys) |
@@ -97,7 +97,7 @@ Evaluated in this order; the first failing check skips the report and logs the r
 ### Example for a typical scheme
 
 One Product Type and one Dependency-Track team per team and environment, the project
-version being the environment of the workload:
+named after the namespace and environment of the workload:
 
 ```yaml
 dependencyTrack:
@@ -122,8 +122,8 @@ Every step is idempotent. `<name>`, `<namespace>` and `<env>` are the resolved v
 | Target | Field | Value |
 |---|---|---|
 | Dependency-Track `POST /api/v1/bom` | `autoCreate` | `true` |
-| | `projectName` | `<namespace>/<name>` |
-| | `projectVersion` | `env` of the namespace entry (not the image tag) |
+| | `projectName` | `<namespace>-<env>` |
+| | `projectVersion` | `<name>` (the repository, not the image tag) |
 | | `projectTags` | the `tags` templates, comma separated |
 | | `bom` | the BOM exactly as stored in the report |
 | DefectDojo Product (create only) | name | `defectDojo.product` template |
@@ -235,7 +235,7 @@ Findings reach DefectDojo only when that task runs, not at upload time.
 ## Sharing a project with other uploaders
 
 Another uploader (for example a CI pipeline) that sends BOMs to the same project name
-(`<namespace>/<name>`) and version writes to the same Dependency-Track project, and with
+(`<namespace>-<env>`) and version (`<name>`) writes to the same Dependency-Track project, and with
 the same DefectDojo settings to the same Product, engagement and test. Dependency-Track
 5.2.1 reconciles components on every BOM: the project ends up with the components of the
 last BOM processed, not the union, and processing is asynchronous, so the order is not

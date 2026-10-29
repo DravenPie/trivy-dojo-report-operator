@@ -397,8 +397,8 @@ def upload_bom(identity: dict, bom: dict) -> tuple[str, str | None]:
         what,
         data={
             "autoCreate": "true",
-            "projectName": f"{identity['namespace']}/{identity['name']}",
-            "projectVersion": identity["env"],
+            "projectName": f"{identity['namespace']}-{identity['env']}",
+            "projectVersion": identity["name"],
             "projectTags": ",".join(identity["tags"]),
         },
         files={"bom": ("sbom.cdx.json", json.dumps(bom).encode(), "application/json")},
@@ -675,7 +675,7 @@ def sbom_to_dependency_track(body, patch, logger, **_):
         raise
     c.labels("success").inc()
     logger.info(
-        f"Linked {identity['namespace']}/{identity['name']}:{identity['env']} to DefectDojo"
+        f"Linked {identity['namespace']}-{identity['env']}:{identity['name']} to DefectDojo"
     )
 
 
