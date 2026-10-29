@@ -47,6 +47,8 @@ environment variables. TLS is verified and redirects are not followed.
 ```json
 {
   "registries": ["registry.example.com"],
+  "default": {"env": "staging", "productType": "tech-staging", "environment": "Staging", "aclTeam": "tech-staging"},
+  "prefixes": {"dev-": {"env": "dev", "productType": "tech-dev", "environment": "Development", "aclTeam": "tech-dev"}},
   "namespaces": {
     "shop-staging": {
       "namespace": "shop", "env": "staging",
@@ -68,9 +70,11 @@ environment variables. TLS is verified and redirects are not followed.
 
 | Key | Required | Meaning |
 |---|---|---|
-| `namespaces` | yes | Kubernetes namespace (of the `SbomReport`) to identity. Per entry: `namespace` (project name prefix, `[A-Za-z0-9._-]`), `env` (project name suffix, any non-empty string), `productType` (DefectDojo Product Type name), `environment` (DefectDojo environment name), optional `tags` (templates, default `["{env}", "{namespace}"]`), optional `aclTeam` (Dependency-Track team name; absent skips the ACL) |
+| `default` | no | Entry (without `namespace`) for every Kubernetes namespace not matched by `namespaces` or `prefixes`; the project `namespace` is the Kubernetes namespace. Absent: unmatched namespaces are skipped |
+| `prefixes` | no | Prefix to entry (without `namespace`): a Kubernetes namespace that starts with the prefix uses the entry and, as `namespace`, the rest of its name (`dev-shop` with `dev-` becomes `shop`). The longest prefix wins; it takes precedence over `default` |
+| `namespaces` | no | Kubernetes namespace (of the `SbomReport`) to identity, merged onto the entry `prefixes` or `default` gives it, so an override only needs the keys that differ; without such an entry it must be complete. At least one of `default`, `prefixes` and `namespaces` is required. Per entry: `namespace` (project name prefix, `[A-Za-z0-9._-]`), `env` (project name suffix, any non-empty string), `productType` (DefectDojo Product Type name), `environment` (DefectDojo environment name), optional `tags` (templates, default `["{env}", "{namespace}"]`), optional `aclTeam` (Dependency-Track team name; absent skips the ACL) |
 | `registries` | no | Exact values of `report.registry.server` that are eligible. Absent or `[]` means all registries |
-| `repositories` | no | `"<k8s namespace>/<repository>"` of a mapped namespace; overrides `name` and/or `namespace` |
+| `repositories` | no | `"<k8s namespace>/<repository>"` of a namespace that `namespaces`, `prefixes` or `default` maps; overrides `name` and/or `namespace` |
 | `exclude` | no | Label key to a non-empty list of values; a report whose label has one of the values is never sent. The label is on the report only if Trivy Operator copies it from the workload (Trivy Operator Helm value `trivyOperator.reportResourceLabels`, a comma-separated list of label keys) |
 | `defectDojo` | no | `engagement` (default `dependency-track`), `product` (default `{namespace}-{env}`), `testTitle` (default `{namespace}/{name}`), `groupBy` (default unset: the property is not written) |
 
@@ -87,7 +91,8 @@ Evaluated in this order; the first failing check skips the report and logs the r
 
 1. `exclude`: skipped when a label value matches.
 2. `registries`: when not empty, `report.registry.server` must be equal to one entry.
-3. `metadata.namespace` must be a key of `namespaces`. There is no other fallback.
+3. `metadata.namespace` is looked up in `namespaces`, then in `prefixes` (longest match),
+   then `default`. Without a match the report is skipped.
 4. `name` is `report.artifact.repository`, `namespace` is the entry's `namespace`;
    `repositories["<k8s namespace>/<repository>"]` overrides either. The result is
    validated (`name` also allows `/`); an invalid or empty result is an error.
@@ -96,8 +101,9 @@ Evaluated in this order; the first failing check skips the report and logs the r
 
 ### Example for a typical scheme
 
-One Product Type and one Dependency-Track team per team and environment, the project
-named after the namespace and environment of the workload:
+One cluster per environment of one team, one Product Type and one Dependency-Track team
+per team and environment, the project named after the namespace and environment of the
+workload; `dev-*` namespaces belong to the `dev` environment and `legacy` is an exception:
 
 ```yaml
 dependencyTrack:
@@ -108,9 +114,11 @@ dependencyTrack:
     secretName: dependency-track-api
   identities:
     registries: [registry.example.com]
+    default: {env: staging, productType: tech-staging, environment: Staging, aclTeam: tech-staging}
+    prefixes:
+      dev-: {env: dev, productType: tech-dev, environment: Development, aclTeam: tech-dev}
     namespaces:
-      shop-staging: {namespace: shop, env: staging, productType: tech-staging, environment: Staging, aclTeam: tech-staging}
-      shop-prod: {namespace: shop, env: prod, productType: tech-prod, environment: Production, aclTeam: tech-prod}
+      legacy: {namespace: shop}
 ```
 
 ## What is sent

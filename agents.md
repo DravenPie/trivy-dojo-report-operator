@@ -34,7 +34,7 @@ The system consists of the following event handlers (agents) defined in `src/han
     -   **Type:** `@kopf.on.create`, `@kopf.on.update` and `@kopf.on.resume` (registered only when `DEPENDENCY_TRACK_ENABLED=true`, in `src/dependency_track.py`)
     -   **Trigger:** `sbomreports.aquasecurity.github.io` (not `ClusterSbomReport`, not part of `REPORTS`). Trivy Operator updates the report on every rescan and drops its status, so all three causes share one handler.
     -   **Responsibility:**
-        -   **Identity:** maps the report to project, DefectDojo Product Type, environment and tags from `DEPENDENCY_TRACK_IDENTITIES` (`namespaces`, optional `registries`, `repositories`, `exclude`, `defectDojo` templates); ineligible reports are skipped.
+        -   **Identity:** maps the report to project, DefectDojo Product Type, environment and tags from `DEPENDENCY_TRACK_IDENTITIES` (`default`, `prefixes` and/or `namespaces`, optional `registries`, `repositories`, `exclude`, `defectDojo` templates); ineligible reports are skipped.
         -   **Change detection:** hashes the resolved identity, URLs, image digest and scanner version and keeps `key`, `stage` and `project` in the annotation `dependency-track.trivy-dojo-report-operator/state`; nothing is sent when it is already `linked`.
         -   **Transmission:** uploads the BOM to Dependency-Track, creates the DefectDojo Product if missing, reimports an empty FPF to create engagement and test, sets the project properties and, with `aclTeam`, maps the ACL team.
         -   **Resilience:** temporary errors retry 10 times, 60 s apart; permanent errors stop. Concurrency is limited only by the Kopf thread pool.

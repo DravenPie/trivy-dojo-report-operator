@@ -26,14 +26,17 @@ dependencyTrack:
   # identities: rendered as-is to JSON in DEPENDENCY_TRACK_IDENTITIES; the operator validates it at startup.
   # Templates accept {namespace}, {name} and {env}; {product} only in testTitle and tags. Example:
   #   registries: [registry.example.com]        # exact report.registry.server; empty = all registries
-  #   namespaces:                               # "<k8s namespace>" -> logical identity
+  #   default:                                  # any other namespace, used as is; absent = skipped
+  #     env: staging
+  #     productType: my-team-staging
+  #     environment: Staging
+  #     tags: ["{env}", "{namespace}"]          # optional, this is the default
+  #     aclTeam: my-team-staging                # optional, without it no ACL is applied
+  #   prefixes:                                 # "dev-my-app" -> namespace "my-app" with this entry
+  #     dev-: {env: dev, productType: my-team-dev, environment: Development, aclTeam: my-team-dev}
+  #   namespaces:                               # "<k8s namespace>" -> keys that differ from prefixes/default
   #     my-ns:
   #       namespace: my-app
-  #       env: staging
-  #       productType: my-team-staging
-  #       environment: Staging
-  #       tags: ["{env}", "{namespace}"]        # optional, this is the default
-  #       aclTeam: my-team-staging              # optional, without it no ACL is applied
   #   repositories:                             # "<k8s namespace>/<repository>" -> optional overrides
   #     my-ns/my-image:
   #       name: my-app-api

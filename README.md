@@ -153,7 +153,7 @@ For a local development setup, please take a look at
 | `dependencyTrack.apiCredentials.apiKey`        | *(empty)*                   | Dependency-Track API key. Only used when `createSecret` is `true`; never commit a real key.                                                                                               |
 | `dependencyTrack.apiCredentials.secretName`    | *(empty)*                   | Name of the existing Secret (required when `createSecret` is `false`, e.g. a Secret that is already reused by other workloads). Optional override of the generated name otherwise.        |
 | `dependencyTrack.apiCredentials.apiKeySecretKey` | `apiKey`                    | Key inside the Secret that holds the API key, e.g. `dependencyTrackApiKey`.                                                                                                               |
-| `dependencyTrack.identities`                   | `{}`                        | Rules that map reports to Dependency-Track projects and Defect Dojo products (namespaces, registries, repositories, exclude, defectDojo). Rendered as JSON; see [DEPENDENCY-TRACK.md](docs/DEPENDENCY-TRACK.md). |
+| `dependencyTrack.identities`                   | `{}`                        | Rules that map reports to Dependency-Track projects and Defect Dojo products (default, prefixes, namespaces, registries, repositories, exclude, defectDojo). Rendered as JSON; see [DEPENDENCY-TRACK.md](docs/DEPENDENCY-TRACK.md). |
 
 ### A note on eval
 

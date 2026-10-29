@@ -41,8 +41,17 @@ DEFAULT_PRODUCT_DESCRIPTION = "Created by trivy-dojo-report-operator"
 
 _TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 _NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._/-]*")
-_TOP_LEVEL_KEYS = {"registries", "namespaces", "repositories", "exclude", "defectDojo"}
-_NAMESPACE_KEYS = {"namespace", "env", "productType", "environment", "tags", "aclTeam"}
+_TOP_LEVEL_KEYS = {
+    "registries",
+    "default",
+    "prefixes",
+    "namespaces",
+    "repositories",
+    "exclude",
+    "defectDojo",
+}
+_ENTRY_KEYS = {"env", "productType", "environment", "tags", "aclTeam"}
+_NAMESPACE_KEYS = _ENTRY_KEYS | {"namespace"}
 _DEFECT_DOJO_DEFAULTS = {
     "engagement": "dependency-track",
     "product": "{namespace}-{env}",
@@ -90,16 +99,27 @@ def _non_empty_str(value) -> bool:
     return isinstance(value, str) and bool(value) and value == value.strip()
 
 
+def base_entry(k8s_ns: str, default: dict | None, prefixes: dict) -> dict | None:
+    """The entry of the longest matching prefix (namespace = k8s ns minus it), else default (namespace = k8s ns)."""
+    for p in sorted(prefixes, key=len, reverse=True):
+        if k8s_ns.startswith(p) and len(k8s_ns) > len(p):
+            return {**prefixes[p], "namespace": k8s_ns[len(p) :]}
+    return {**default, "namespace": k8s_ns} if default else None
+
+
 def parse_dependency_track_identities(raw: str) -> dict:
     """
     Validate DEPENDENCY_TRACK_IDENTITIES and fill the defaults:
     {
       "registries": ["<registry>"],                       # optional; absent or [] means all
-      "namespaces": {"<k8s ns>": {                        # required
-          "namespace": "...", "env": "...",               # project name prefix, project version
-          "productType": "...", "environment": "...",     # DefectDojo names
+      "default": {<entry without namespace>},             # optional; any other k8s ns, as is
+      "prefixes": {"<prefix>": {<entry without namespace>}},  # optional; k8s ns minus the prefix
+      "namespaces": {"<k8s ns>": {                        # optional overrides, merged onto the
+          "namespace": "...", "env": "...",               # matching prefix or default entry;
+          "productType": "...", "environment": "...",     # complete without one
           "tags": ["{env}", "{namespace}"],               # optional templates
           "aclTeam": "..."}},                             # optional; absent skips the ACL
+      # at least one of default, prefixes or namespaces is required
       "repositories": {"<k8s ns>/<repository>": {"name": "...", "namespace": "..."}},  # optional
       "exclude": {"<label key>": ["<value>"]},            # optional
       "defectDojo": {"engagement": "...", "product": "...", "testTitle": "...", "groupBy": "..."}
@@ -113,12 +133,12 @@ def parse_dependency_track_identities(raw: str) -> dict:
         raise ValueError("DEPENDENCY_TRACK_IDENTITIES is not valid JSON") from None
     if (
         not isinstance(data, dict)
-        or "namespaces" not in data
+        or not data.keys() & {"default", "prefixes", "namespaces"}
         or not data.keys() <= _TOP_LEVEL_KEYS
     ):
         raise ValueError(
-            "DEPENDENCY_TRACK_IDENTITIES must be an object with namespaces and optionally "
-            "registries, repositories, exclude and defectDojo"
+            "DEPENDENCY_TRACK_IDENTITIES must be an object with default, prefixes and/or "
+            "namespaces and optionally registries, repositories, exclude and defectDojo"
         )
     prefix = "DEPENDENCY_TRACK_IDENTITIES"
 
@@ -148,27 +168,26 @@ def parse_dependency_track_identities(raw: str) -> dict:
     except ValueError as err:
         raise ValueError(f"{prefix}.defectDojo: {err}") from None
 
-    namespaces = data["namespaces"]
-    if not isinstance(namespaces, dict) or not namespaces:
-        raise ValueError(f"{prefix}.namespaces must be a non-empty object")
-    for k8s_ns, entry in namespaces.items():
-        where = f"{prefix}.namespaces['{k8s_ns}']"
+    def check_entry(where: str, entry, keys: set) -> dict:
+        """Validate one complete identity entry (with namespace when it is in keys)."""
+        required = {"env", "productType", "environment"} | (keys - _ENTRY_KEYS)
         if (
             not isinstance(entry, dict)
-            or not {"namespace", "env", "productType", "environment"} <= entry.keys()
-            or not entry.keys() <= _NAMESPACE_KEYS
+            or not required <= entry.keys()
+            or not entry.keys() <= keys
         ):
             raise ValueError(
-                f"{where} needs namespace, env, productType, environment and optionally tags, aclTeam"
+                f"{where} needs {', '.join(sorted(required))} and optionally tags, aclTeam"
             )
-        try:
-            validate_identity(entry["namespace"], None)
-        except ValueError as err:
-            raise ValueError(f"{where}: {err}") from None
+        if "namespace" in entry:
+            try:
+                validate_identity(entry["namespace"], None)
+            except ValueError as err:
+                raise ValueError(f"{where}: {err}") from None
         for key in ("env", "productType", "environment", "aclTeam"):
             if key in entry and not _non_empty_str(entry[key]):
                 raise ValueError(f"{where}.{key} must be a non-empty string")
-        entry.setdefault("tags", list(DEFAULT_TAGS))
+        entry = {"tags": list(DEFAULT_TAGS), **entry}
         if (
             not isinstance(entry["tags"], list)
             or not entry["tags"]
@@ -184,13 +203,46 @@ def parse_dependency_track_identities(raw: str) -> dict:
                 raise ValueError(
                     f"{where}.tags must produce non-empty tags without commas"
                 )
+        return entry
+
+    default = data.get("default")
+    if default is not None:
+        default = check_entry(f"{prefix}.default", default, _ENTRY_KEYS)
+    prefixes = data.get("prefixes", {})
+    if not isinstance(prefixes, dict) or not all(_non_empty_str(k) for k in prefixes):
+        raise ValueError(f"{prefix}.prefixes must map non-empty prefixes to entries")
+    prefixes = {
+        k: check_entry(f"{prefix}.prefixes['{k}']", v, _ENTRY_KEYS)
+        for k, v in prefixes.items()
+    }
+    namespaces = data.get("namespaces", {})
+    if not isinstance(namespaces, dict):
+        raise ValueError(f"{prefix}.namespaces must be an object")
+    namespaces = {
+        k8s_ns: check_entry(
+            f"{prefix}.namespaces['{k8s_ns}']",
+            (
+                {**(base_entry(k8s_ns, default, prefixes) or {}), **entry}
+                if isinstance(entry, dict)
+                else entry
+            ),
+            _NAMESPACE_KEYS,
+        )
+        for k8s_ns, entry in namespaces.items()
+    }
+    if not (default or prefixes or namespaces):
+        raise ValueError(
+            f"{prefix} must map at least one namespace (default, prefixes or namespaces)"
+        )
 
     repositories = data.get("repositories", {})
     if not isinstance(repositories, dict):
         raise ValueError(f"{prefix}.repositories must be an object")
     for key, override in repositories.items():
         k8s_ns, _, repository = key.partition("/")
-        if k8s_ns not in namespaces or not repository:
+        if not repository or not (
+            k8s_ns in namespaces or base_entry(k8s_ns, default, prefixes)
+        ):
             raise ValueError(
                 f"{prefix}.repositories key '{key}' must be '<k8s namespace>/<repository>' of a mapped namespace"
             )
@@ -220,6 +272,8 @@ def parse_dependency_track_identities(raw: str) -> dict:
 
     return {
         "registries": registries,
+        "default": default,
+        "prefixes": prefixes,
         "namespaces": namespaces,
         "repositories": repositories,
         "exclude": exclude,
@@ -270,7 +324,9 @@ def resolve_identity(body) -> dict:
     if cfg["registries"] and server not in cfg["registries"]:
         raise NotEligible(f"registry '{server}' is out of scope")
     k8s_ns = meta.get("namespace")
-    mapped = cfg["namespaces"].get(k8s_ns)
+    mapped = cfg["namespaces"].get(k8s_ns) or base_entry(
+        k8s_ns, cfg["default"], cfg["prefixes"]
+    )
     if mapped is None:
         raise NotEligible(f"namespace '{k8s_ns}' is not mapped")
 
