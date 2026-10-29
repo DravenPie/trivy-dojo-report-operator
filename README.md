@@ -11,6 +11,7 @@ analysis and tracking.
 * Monitor Kubernetes for new Trivy vulnerability reports.
 * Intercept and modify reports (e.g., for custom deduplication or enrichment) before upload.
 * Push vulnerability reports to a configured Defect Dojo instance.
+* Optionally upload SBOMs (`SbomReport`) to Dependency-Track and link them to Defect Dojo.
 * Seamless integration with your existing Kubernetes cluster and security workflow.
 * Developed using the Pythonic Kopf framework for easy maintenance and extensibility.
 
@@ -146,6 +147,13 @@ For a local development setup, please take a look at
 | `transformation.scriptConfigMap.create`        | `false`                     | When `true`, Helm creates and manages the ConfigMap from `data`. The name is derived automatically from the release (`<release>-transform-scripts`).                                  |
 | `transformation.scriptConfigMap.data`          | `{}`                        | Map of `filename: content` for the script files. Only used when `create` is `true`.                                                                                                  |
 | `rbac.additionalRules`                         | `[]`                        | Additional RBAC rules appended to the base ClusterRole. Strictly additive — base rules are always present. Each entry is a standard RBAC rule object (`apiGroups`, `resources`, `verbs`). |
+| `dependencyTrack.enabled`                      | `false`                     | Upload Trivy Operator `SbomReport` SBOMs to Dependency-Track and link them to Defect Dojo. See [DEPENDENCY-TRACK.md](docs/DEPENDENCY-TRACK.md).                                           |
+| `dependencyTrack.url`                          | *(empty)*                   | Base URL of Dependency-Track (`http` or `https`). Required when enabled.                                                                                                                  |
+| `dependencyTrack.apiCredentials.createSecret`  | `true`                      | When `true`, Helm creates the Secret from `apiKey`; when `false`, an existing Secret is used.                                                                                             |
+| `dependencyTrack.apiCredentials.apiKey`        | *(empty)*                   | Dependency-Track API key. Only used when `createSecret` is `true`; never commit a real key.                                                                                               |
+| `dependencyTrack.apiCredentials.secretName`    | *(empty)*                   | Name of the existing Secret (required when `createSecret` is `false`, e.g. a Secret that is already reused by other workloads). Optional override of the generated name otherwise.        |
+| `dependencyTrack.apiCredentials.apiKeySecretKey` | `apiKey`                    | Key inside the Secret that holds the API key, e.g. `dependencyTrackApiKey`.                                                                                                               |
+| `dependencyTrack.identities`                   | `{}`                        | Rules that map reports to Dependency-Track projects and Defect Dojo products (namespaces, registries, repositories, exclude, defectDojo). Rendered as JSON; see [DEPENDENCY-TRACK.md](docs/DEPENDENCY-TRACK.md). |
 
 ### A note on eval
 
@@ -233,10 +241,19 @@ rbac:
 
 The base ClusterRole rules are always present and cannot be removed through this value.
 
+## Dependency-Track (optional)
+
+When `dependencyTrack.enabled=true` (Helm; env `DEPENDENCY_TRACK_ENABLED=true`), the
+operator uploads the CycloneDX SBOM of each `SbomReport` to Dependency-Track and
+links the project to Defect Dojo. It is disabled by default. `ClusterSbomReport` and
+KBOM are not handled. See [DEPENDENCY-TRACK.md](docs/DEPENDENCY-TRACK.md) for identity
+rules, configuration, required permissions and activation.
+
 ## Metrics
 
 The operator provides a Prometheus metrics endpoint(:9090/metrics), where
-successful and failed requests are collected.
+successful and failed requests are collected. With Dependency-Track enabled,
+`dependency_track_reports_total{status="success|failed|skipped"}` is also exposed.
 
 ```bash
 # HELP request_processing_seconds Time spent processing request
