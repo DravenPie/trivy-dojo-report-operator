@@ -98,3 +98,15 @@ TRANSFORMATION_INTERPRETER: str = os.getenv("TRANSFORMATION_INTERPRETER", "pytho
 DEFECT_DOJO_SCAN_TYPE_OVERRIDE: str = os.getenv(
     "DEFECT_DOJO_SCAN_TYPE_OVERRIDE", "Generic Findings Import"
 )
+
+# Dependency-Track is opt-in: nothing below is required or validated unless it is enabled
+# (dependency_track.py validates the values when it is imported).
+DEPENDENCY_TRACK_ENABLED: bool = get_env_var_bool("DEPENDENCY_TRACK_ENABLED")
+DEPENDENCY_TRACK_STATE_ANNOTATION = "dependency-track.trivy-dojo-report-operator/state"
+DEPENDENCY_TRACK_URL: str = ""
+DEPENDENCY_TRACK_API_KEY: str = ""
+DEPENDENCY_TRACK_IDENTITIES: str = ""
+if DEPENDENCY_TRACK_ENABLED:
+    DEPENDENCY_TRACK_URL = get_required_env_var("DEPENDENCY_TRACK_URL")
+    DEPENDENCY_TRACK_API_KEY = get_required_env_var("DEPENDENCY_TRACK_API_KEY")
+    DEPENDENCY_TRACK_IDENTITIES = get_required_env_var("DEPENDENCY_TRACK_IDENTITIES")
