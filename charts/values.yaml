@@ -2,6 +2,50 @@ defectDojoApiCredentials:
   createSecret: true
   apiKey: "YOUR_DEFECTDOJO_API_KEY"
   url: "YOUR_DEFECTDOJO_URL"
+# dependencyTrack: opt-in upload of Trivy Operator SbomReports to Dependency-Track.
+# Disabled by default: when false only the DEPENDENCY_TRACK_ENABLED flag is rendered, no Secret
+# is required and the ClusterRole gets no sbomreports rule (the SbomReport CRD is not needed).
+dependencyTrack:
+  # enabled: turns the integration on; url and the API key Secret become mandatory.
+  enabled: false
+  # url: base URL of Dependency-Track, http or https (DEPENDENCY_TRACK_URL).
+  url: ""
+  # apiCredentials: where the Dependency-Track API key comes from (DEPENDENCY_TRACK_API_KEY).
+  apiCredentials:
+    # createSecret: true = Helm creates the Secret from apiKey;
+    #               false = use an existing Secret (ExternalSecret, operator-managed Secret, ...).
+    createSecret: true
+    # apiKey: only used when createSecret is true. Never commit a real key; pass it with --set or a private values file.
+    apiKey: ""
+    # secretName: createSecret=false: name of the existing Secret (required).
+    #             createSecret=true: optional override of the generated name
+    #             (default <fullname>-dependency-track-api-credentials).
+    secretName: ""
+    # apiKeySecretKey: key inside the Secret that holds the API key.
+    apiKeySecretKey: apiKey
+  # identities: rendered as-is to JSON in DEPENDENCY_TRACK_IDENTITIES; the operator validates it at startup.
+  # Templates accept {namespace}, {name} and {env}; {product} only in testTitle and tags. Example:
+  #   registries: [registry.example.com]        # exact report.registry.server; empty = all registries
+  #   namespaces:                               # "<k8s namespace>" -> logical identity
+  #     my-ns:
+  #       namespace: my-app
+  #       env: staging
+  #       productType: my-team-staging
+  #       environment: Staging
+  #       tags: ["{env}", "{namespace}"]        # optional, this is the default
+  #       aclTeam: my-team-staging              # optional, without it no ACL is applied
+  #   repositories:                             # "<k8s namespace>/<repository>" -> optional overrides
+  #     my-ns/my-image:
+  #       name: my-app-api
+  #       namespace: my-app
+  #   exclude:                                  # workload label key -> values that are never sent
+  #     example.com/app: [my-app-canary]
+  #   defectDojo:                               # all optional
+  #     engagement: dependency-track
+  #     product: "{namespace}-{env}"
+  #     testTitle: "{namespace}/{name}"
+  #     groupBy: component_name+component_version
+  identities: {}
 kubernetesClusterDomain: cluster.local
 account:
   serviceAccount:
