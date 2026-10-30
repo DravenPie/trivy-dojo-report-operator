@@ -98,7 +98,11 @@ Evaluated in this order; the first failing check skips the report and logs the r
    `repositories["<k8s namespace>/<repository>"]` overrides either. The result is
    validated (`name` also allows `/`); an invalid or empty result is an error.
 5. A report owned by a ReplicaSet is ignored when the ReplicaSet no longer exists or has
-   `spec.replicas` 0 (an old rollout must not overwrite the current SBOM).
+   `spec.replicas` 0 (an old rollout must not overwrite the current SBOM). Reports that
+   Trivy Operator marked as historical (annotation
+   `trivy-operator.aquasecurity.github.io/report-ttl: 0s`, set on inactive revisions) are
+   ignored too: Trivy rewrites all their annotations on every change, so the state would
+   never stick.
 
 ### Example for a typical scheme
 

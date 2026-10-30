@@ -670,6 +670,12 @@ def replicaset_replicas(namespace: str, name: str) -> int | None:
 
 def is_obsolete(body, logger) -> bool:
     """An old ReplicaSet scaled to zero is a past rollout: its SBOM must not overwrite the current one."""
+    annotations = body["metadata"].get("annotations") or {}
+    # Trivy marks reports of inactive revisions this way and rewrites all their annotations
+    # whenever the report changes, so uploading them would loop.
+    if annotations.get("trivy-operator.aquasecurity.github.io/report-ttl") == "0s":
+        logger.info("Trivy marked the report as historical, skipping")
+        return True
     labels = body["metadata"].get("labels") or {}
     if labels.get("trivy-operator.resource.kind") != "ReplicaSet":
         return False
