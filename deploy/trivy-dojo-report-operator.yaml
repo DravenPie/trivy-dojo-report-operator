@@ -245,6 +245,7 @@ spec:
             port: 8080
           initialDelaySeconds: 5
           periodSeconds: 30
+          timeoutSeconds: 10
         name: trivy-dojo-report-operator
         securityContext:
           allowPrivilegeEscalation: false
