@@ -265,6 +265,13 @@ if settings.LABEL and settings.LABEL_VALUE:
 else:
     labels = {}
 
+if not settings.DEFECT_DOJO_REPORTS_ENABLED:
+    logger.info("Sending reports to DefectDojo is disabled, REPORTS is ignored")
+    if not settings.DEPENDENCY_TRACK_REPORTS_ENABLED:
+        logger.warning(
+            "DefectDojo and Dependency-Track reports are both disabled, nothing is processed"
+        )
+
 for report in settings.REPORTS:
     # check if reports are allowed
     check_allowed_reports(report)
@@ -467,7 +474,7 @@ for report in settings.REPORTS:
 # Trivy rewrites the SbomReport on every rescan (status dropped): the handler covers
 # create, update and resume. Registered only when enabled; sbomreports stay out of
 # REPORTS so they never reach the DefectDojo flow above.
-if settings.DEPENDENCY_TRACK_ENABLED:
+if settings.DEPENDENCY_TRACK_REPORTS_ENABLED:
     import dependency_track
 
     dependency_track.register(labels)

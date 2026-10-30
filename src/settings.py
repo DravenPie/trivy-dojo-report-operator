@@ -85,7 +85,15 @@ DEFECT_DOJO_DO_NOT_REACTIVATE: bool = get_env_var_bool("DEFECT_DOJO_DO_NOT_REACT
 
 LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
 
-REPORTS: list = os.getenv("REPORTS", "vulnerabilityreports").split(",")
+# Only "false" (any case) disables it, so a missing env (image run without the chart) keeps it on.
+DEFECT_DOJO_REPORTS_ENABLED: bool = (
+    os.getenv("DEFECT_DOJO_REPORTS_ENABLED", "true").lower() != "false"
+)
+REPORTS: list = (
+    os.getenv("REPORTS", "vulnerabilityreports").split(",")
+    if DEFECT_DOJO_REPORTS_ENABLED
+    else []
+)
 
 HTTP_PROXY: str = os.getenv("HTTP_PROXY") or os.getenv("http_proxy")
 HTTPS_PROXY: str = os.getenv("HTTPS_PROXY") or os.getenv("https_proxy")
@@ -101,12 +109,14 @@ DEFECT_DOJO_SCAN_TYPE_OVERRIDE: str = os.getenv(
 
 # Dependency-Track is opt-in: nothing below is required or validated unless it is enabled
 # (dependency_track.py validates the values when it is imported).
-DEPENDENCY_TRACK_ENABLED: bool = get_env_var_bool("DEPENDENCY_TRACK_ENABLED")
+DEPENDENCY_TRACK_REPORTS_ENABLED: bool = (
+    os.getenv("DEPENDENCY_TRACK_REPORTS_ENABLED", "false").lower() == "true"
+)
 DEPENDENCY_TRACK_STATE_ANNOTATION = "dependency-track.trivy-dojo-report-operator/state"
 DEPENDENCY_TRACK_URL: str = ""
 DEPENDENCY_TRACK_API_KEY: str = ""
 DEPENDENCY_TRACK_IDENTITIES: str = ""
-if DEPENDENCY_TRACK_ENABLED:
+if DEPENDENCY_TRACK_REPORTS_ENABLED:
     DEPENDENCY_TRACK_URL = get_required_env_var("DEPENDENCY_TRACK_URL")
     DEPENDENCY_TRACK_API_KEY = get_required_env_var("DEPENDENCY_TRACK_API_KEY")
     DEPENDENCY_TRACK_IDENTITIES = get_required_env_var("DEPENDENCY_TRACK_IDENTITIES")

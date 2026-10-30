@@ -136,6 +136,7 @@ For a local development setup, please take a look at
 | `defectDojoVerified`                     | `false`                     | Mark findings as verified in Defect Dojo.                                                                                                                                                      |
 | `defectDojoDoNotReactivate`              | `true`                      | If true, do not reactivate previously closed findings when importing.                                                                                                                          |
 | `reports`                                | `vulnerabilityreports`      | Comma-separated list of report types to send to Defect Dojo. Supported types: `vulnerabilityreports`, `rbacassessmentreports`, `infraassessmentreports`, `configauditreports`, `exposedsecretreports`. |
+| `defectDojo.reportsEnabled`              | `true`                      | Send the report types in `reports` to Defect Dojo. When `false`, `reports` is ignored; the Defect Dojo credentials stay required (Dependency-Track links projects to it). |
 | `http_proxy`                             | *(empty)*                   | HTTP proxy setting (optional).                                                                                                                                                                 |
 | `https_proxy`                            | *(empty)*                   | HTTPS proxy setting (optional).                                                                                                                                                                |
 | `excludedNamespaces`                     | *(empty)*                   | List of namespace globs patterns to exclude from processing. Each pattern is converted into a --namespace=!<pattern> CLI argument passed to the operator Deployment. Reports from these namespaces will be ignored (optional). |
@@ -147,7 +148,7 @@ For a local development setup, please take a look at
 | `transformation.scriptConfigMap.create`        | `false`                     | When `true`, Helm creates and manages the ConfigMap from `data`. The name is derived automatically from the release (`<release>-transform-scripts`).                                  |
 | `transformation.scriptConfigMap.data`          | `{}`                        | Map of `filename: content` for the script files. Only used when `create` is `true`.                                                                                                  |
 | `rbac.additionalRules`                         | `[]`                        | Additional RBAC rules appended to the base ClusterRole. Strictly additive — base rules are always present. Each entry is a standard RBAC rule object (`apiGroups`, `resources`, `verbs`). |
-| `dependencyTrack.enabled`                      | `false`                     | Upload Trivy Operator `SbomReport` SBOMs to Dependency-Track and link them to Defect Dojo. See [DEPENDENCY-TRACK.md](docs/DEPENDENCY-TRACK.md).                                           |
+| `dependencyTrack.reportsEnabled`               | `false`                     | Upload Trivy Operator `SbomReport` SBOMs to Dependency-Track and link them to Defect Dojo. See [DEPENDENCY-TRACK.md](docs/DEPENDENCY-TRACK.md).                                           |
 | `dependencyTrack.url`                          | *(empty)*                   | Base URL of Dependency-Track (`http` or `https`). Required when enabled.                                                                                                                  |
 | `dependencyTrack.apiCredentials.createSecret`  | `true`                      | When `true`, Helm creates the Secret from `apiKey`; when `false`, an existing Secret is used.                                                                                             |
 | `dependencyTrack.apiCredentials.apiKey`        | *(empty)*                   | Dependency-Track API key. Only used when `createSecret` is `true`; never commit a real key.                                                                                               |
@@ -243,11 +244,12 @@ The base ClusterRole rules are always present and cannot be removed through this
 
 ## Dependency-Track (optional)
 
-When `dependencyTrack.enabled=true` (Helm; env `DEPENDENCY_TRACK_ENABLED=true`), the
+When `dependencyTrack.reportsEnabled=true` (Helm; env `DEPENDENCY_TRACK_REPORTS_ENABLED=true`), the
 operator uploads the CycloneDX SBOM of each `SbomReport` to Dependency-Track and
 links the project to Defect Dojo. It is disabled by default. `ClusterSbomReport` and
 KBOM are not handled. See [DEPENDENCY-TRACK.md](docs/DEPENDENCY-TRACK.md) for identity
-rules, configuration, required permissions and activation.
+rules, configuration, required permissions and activation. To use only
+Dependency-Track, set `defectDojo.reportsEnabled=false`.
 
 ## Metrics
 

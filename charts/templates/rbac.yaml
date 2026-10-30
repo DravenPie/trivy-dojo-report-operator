@@ -47,7 +47,7 @@ rules:
   - events
   verbs:
   - create
-{{- if .Values.dependencyTrack.enabled }}
+{{- if .Values.dependencyTrack.reportsEnabled }}
 - apiGroups:
   - aquasecurity.github.io
   resources:

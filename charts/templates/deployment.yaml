@@ -30,6 +30,8 @@ spec:
               key: url
               name: {{ include "charts.fullname" . }}-defect-dojo-api-credentials
               optional: false
+        - name: DEFECT_DOJO_REPORTS_ENABLED
+          value: {{ quote .Values.defectDojo.reportsEnabled }}
         - name: DEFECT_DOJO_ACTIVE
           value: {{ quote .Values.operator.trivyDojoReportOperator.env.defectDojoActive
             }}
@@ -141,15 +143,15 @@ spec:
           value: {{ quote .Values.operator.trivyDojoReportOperator.transformation.scanType }}
         - name: LOG_LEVEL
           value: {{ quote .Values.operator.trivyDojoReportOperator.env.logLevel }}
-        - name: DEPENDENCY_TRACK_ENABLED
-          value: {{ quote .Values.dependencyTrack.enabled }}
-        {{- if .Values.dependencyTrack.enabled }}
+        - name: DEPENDENCY_TRACK_REPORTS_ENABLED
+          value: {{ quote .Values.dependencyTrack.reportsEnabled }}
+        {{- if .Values.dependencyTrack.reportsEnabled }}
         - name: DEPENDENCY_TRACK_URL
-          value: {{ required "dependencyTrack.url is required when dependencyTrack.enabled=true" .Values.dependencyTrack.url | quote }}
+          value: {{ required "dependencyTrack.url is required when dependencyTrack.reportsEnabled=true" .Values.dependencyTrack.url | quote }}
         - name: DEPENDENCY_TRACK_API_KEY
           valueFrom:
             secretKeyRef:
-              key: {{ required "dependencyTrack.apiCredentials.apiKeySecretKey is required when dependencyTrack.enabled=true" .Values.dependencyTrack.apiCredentials.apiKeySecretKey }}
+              key: {{ required "dependencyTrack.apiCredentials.apiKeySecretKey is required when dependencyTrack.reportsEnabled=true" .Values.dependencyTrack.apiCredentials.apiKeySecretKey }}
               name: {{ include "charts.dependencyTrackSecretName" . }}
               optional: false
         - name: DEPENDENCY_TRACK_IDENTITIES

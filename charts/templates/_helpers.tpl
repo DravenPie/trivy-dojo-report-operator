@@ -67,7 +67,7 @@ createSecret=false: secretName of an existing Secret is mandatory.
 {{- if $c.createSecret }}
 {{- default (printf "%s-dependency-track-api-credentials" (include "charts.fullname" .)) $c.secretName }}
 {{- else }}
-{{- required "dependencyTrack.apiCredentials.secretName is required when dependencyTrack.enabled=true and createSecret=false" $c.secretName }}
+{{- required "dependencyTrack.apiCredentials.secretName is required when dependencyTrack.reportsEnabled=true and createSecret=false" $c.secretName }}
 {{- end }}
 {{- end }}
 

@@ -10,7 +10,7 @@ was checked against Dependency-Track 5.2.1 and DefectDojo 3.4.201.
 
 - Handled: `sbomreports.aquasecurity.github.io` (namespaced `SbomReport`).
 - Not handled: `ClusterSbomReport` and KBOM.
-- Disabled by default (`DEPENDENCY_TRACK_ENABLED` is not `true`): the module is not
+- Disabled by default (`DEPENDENCY_TRACK_REPORTS_ENABLED` is not `true`): the module is not
   imported, nothing is validated, and Kopf does not even watch `sbomreports`.
 - `sbomreports` are never part of `REPORTS` and never reach the Trivy Operator scan
   parser or DefectDojo as vulnerabilities. The `LABEL`/`LABEL_VALUE` filter applies
@@ -23,11 +23,12 @@ was checked against Dependency-Track 5.2.1 and DefectDojo 3.4.201.
 
 | Environment variable | Helm value | Notes |
 |---|---|---|
-| `DEPENDENCY_TRACK_ENABLED` | `dependencyTrack.enabled` | default `false` |
+| `DEPENDENCY_TRACK_REPORTS_ENABLED` | `dependencyTrack.reportsEnabled` | default `false` |
 | `DEPENDENCY_TRACK_URL` | `dependencyTrack.url` | `http` or `https` URL without credentials, query or fragment; `http` is accepted with a startup warning (the API key travels unencrypted) |
 | `DEPENDENCY_TRACK_API_KEY` | `dependencyTrack.apiCredentials.*` | from a Secret |
 | `DEPENDENCY_TRACK_IDENTITIES` | `dependencyTrack.identities` | JSON, see below; validated at startup |
 | `DEFECT_DOJO_URL`, `DEFECT_DOJO_API_KEY` | `defectDojoApiCredentials.*` | existing settings, reused |
+| `DEFECT_DOJO_REPORTS_ENABLED` | `defectDojo.reportsEnabled` | default `true`; `false` disables the `REPORTS` flow (`REPORTS` is ignored) |
 
 API key Secret: with `createSecret: true` the chart creates it from `apiKey` (never
 commit a real key; use `--set` or a private values file). With `createSecret: false`,
@@ -37,7 +38,7 @@ set `secretName` to an existing Secret (for example from an ExternalSecret) and
 When enabled, the chart also adds to the ClusterRole: `sbomreports`
 (`get`, `list`, `watch`, `patch`) and `apps/replicasets` (`get`). Trivy Operator must
 have SBOM generation enabled so `SbomReport` objects exist. The static manifest in
-`deploy/` only carries `DEPENDENCY_TRACK_ENABLED=false`; use Helm to enable.
+`deploy/` only carries `DEPENDENCY_TRACK_REPORTS_ENABLED=false`; use Helm to enable.
 
 Network: requests use the standard `HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY`
 environment variables. TLS is verified and redirects are not followed.
@@ -107,7 +108,7 @@ workload; `dev-*` namespaces belong to the `dev` environment and `legacy` is an 
 
 ```yaml
 dependencyTrack:
-  enabled: true
+  reportsEnabled: true
   url: https://dependency-track.example.com
   apiCredentials:
     createSecret: false

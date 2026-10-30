@@ -2,12 +2,16 @@ defectDojoApiCredentials:
   createSecret: true
   apiKey: "YOUR_DEFECTDOJO_API_KEY"
   url: "YOUR_DEFECTDOJO_URL"
+# defectDojo.reportsEnabled: send the report kinds listed in operator.trivyDojoReportOperator.env.reports to Defect Dojo.
+# When false that list is ignored; the Defect Dojo credentials stay required (Dependency-Track links projects to it).
+defectDojo:
+  reportsEnabled: true
 # dependencyTrack: opt-in upload of Trivy Operator SbomReports to Dependency-Track.
-# Disabled by default: when false only the DEPENDENCY_TRACK_ENABLED flag is rendered, no Secret
+# Disabled by default: when false only the DEPENDENCY_TRACK_REPORTS_ENABLED flag is rendered, no Secret
 # is required and the ClusterRole gets no sbomreports rule (the SbomReport CRD is not needed).
 dependencyTrack:
-  # enabled: turns the integration on; url and the API key Secret become mandatory.
-  enabled: false
+  # reportsEnabled: turns the integration on; url and the API key Secret become mandatory.
+  reportsEnabled: false
   # url: base URL of Dependency-Track, http or https (DEPENDENCY_TRACK_URL).
   url: ""
   # apiCredentials: where the Dependency-Track API key comes from (DEPENDENCY_TRACK_API_KEY).

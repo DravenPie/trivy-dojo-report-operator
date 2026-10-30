@@ -16,7 +16,7 @@ The system consists of the following event handlers (agents) defined in `src/han
     -   **Responsibility:** Initializes the operator configuration, setting timeouts for watching resources to prevent connection drops, and configuring the persistence storage mechanism (`StatusDiffBaseStorage`) to handle large resource objects efficiently without overloading Kubernetes annotations.
 
 2.  **Report Forwarding Agent (`send_to_dojo`)**
-    -   **Type:** `@kopf.on.create(...)` (Dynamic Registration)
+    -   **Type:** `@kopf.on.create(...)` (Dynamic Registration, one per entry in `REPORTS`; skipped when `DEFECT_DOJO_REPORTS_ENABLED=false`)
     -   **Trigger:** Creation of Trivy-generated Custom Resources (CRs). The specific resources watched are configurable, but typically include:
         -   `vulnerabilityreports.aquasecurity.github.io`
         -   `configauditreports.aquasecurity.github.io`
@@ -31,7 +31,7 @@ The system consists of the following event handlers (agents) defined in `src/han
         -   **Observability:** Records Prometheus metrics, including processing time (`request_processing_seconds`) and request counters (`requests_total`).
 
 3.  **SBOM Agent (`sbom_to_dependency_track`)**
-    -   **Type:** `@kopf.on.create`, `@kopf.on.update` and `@kopf.on.resume` (registered only when `DEPENDENCY_TRACK_ENABLED=true`, in `src/dependency_track.py`)
+    -   **Type:** `@kopf.on.create`, `@kopf.on.update` and `@kopf.on.resume` (registered only when `DEPENDENCY_TRACK_REPORTS_ENABLED=true`, in `src/dependency_track.py`)
     -   **Trigger:** `sbomreports.aquasecurity.github.io` (not `ClusterSbomReport`, not part of `REPORTS`). Trivy Operator updates the report on every rescan and drops its status, so all three causes share one handler.
     -   **Responsibility:**
         -   **Identity:** maps the report to project, DefectDojo Product Type, environment and tags from `DEPENDENCY_TRACK_IDENTITIES` (`default`, `prefixes` and/or `namespaces`, optional `registries`, `repositories`, `exclude`, `defectDojo` templates); ineligible reports are skipped.
@@ -46,8 +46,8 @@ The system consists of the following event handlers (agents) defined in `src/han
 The agents are configured via environment variables (loaded in `src/settings.py` and `src/env_vars.py`), controlling:
 
 -   **Connectivity:** DefectDojo URL (`DEFECT_DOJO_URL`) and API Key (`DEFECT_DOJO_API_KEY`).
--   **Scope:** optional filtering by Kubernetes Label (`LABEL`, `LABEL_VALUE`).
--   **Dependency-Track (optional):** `DEPENDENCY_TRACK_ENABLED`, `DEPENDENCY_TRACK_URL`, `DEPENDENCY_TRACK_API_KEY`, `DEPENDENCY_TRACK_IDENTITIES`.
+-   **Scope:** optional filtering by Kubernetes Label (`LABEL`, `LABEL_VALUE`); `REPORTS` and `DEFECT_DOJO_REPORTS_ENABLED` (default `true`) select the reports sent to DefectDojo.
+-   **Dependency-Track (optional):** `DEPENDENCY_TRACK_REPORTS_ENABLED`, `DEPENDENCY_TRACK_URL`, `DEPENDENCY_TRACK_API_KEY`, `DEPENDENCY_TRACK_IDENTITIES`.
 -   **Import Logic:**
     -   `DEFECT_DOJO_ACTIVE`: Whether findings are marked as active.
     -   `DEFECT_DOJO_VERIFIED`: Whether findings are marked as verified.

@@ -7,7 +7,7 @@ sets the Dependency-Track integration properties and, optionally, maps the proje
 a Dependency-Track team. Dependency-Track itself analyzes the BOM and exports the
 findings to DefectDojo asynchronously, so the handler never waits for the analysis.
 
-Imported (and its handlers registered) only when DEPENDENCY_TRACK_ENABLED=true.
+Imported (and its handlers registered) only when DEPENDENCY_TRACK_REPORTS_ENABLED=true.
 """
 
 import hashlib
