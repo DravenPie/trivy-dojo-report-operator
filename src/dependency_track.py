@@ -15,6 +15,7 @@ import json
 import logging
 import re
 import sys
+import threading
 import uuid
 from urllib.parse import urlparse
 
@@ -458,7 +459,10 @@ def upload_bom(identity: dict, bom: dict) -> tuple[str, str | None]:
             "projectTags": ",".join(identity["tags"]),
         },
         files={"bom": ("sbom.cdx.json", json.dumps(bom).encode(), "application/json")},
+        accept=(409,),
     )
+    if response.status_code == 409:  # project created concurrently by another uploader
+        raise kopf.TemporaryError(f"{what}: HTTP 409", delay=RETRY_DELAY)
     data = _json(response, what)
     try:
         project = str(uuid.UUID(str(data["projectUuid"])))
@@ -678,6 +682,16 @@ def is_obsolete(body, logger) -> bool:
     return True
 
 
+_locks: dict[str, threading.Lock] = {}
+_locks_guard = threading.Lock()
+
+
+def destination_lock(identity: dict) -> threading.Lock:
+    """One lock per DefectDojo Product: reports sharing it must not create the Product, engagement or test twice."""
+    with _locks_guard:
+        return _locks.setdefault(identity["dojo"]["product"], threading.Lock())
+
+
 def sbom_to_dependency_track(body, patch, logger, **_):
     """Upload the SbomReport BOM to Dependency-Track and link it to DefectDojo, at least once."""
     try:
@@ -715,16 +729,19 @@ def sbom_to_dependency_track(body, patch, logger, **_):
             project = str(uuid.UUID(project)) if project else None
         except (TypeError, ValueError):
             project = None
-        if project:
-            logger.info("Resuming DefectDojo link of the already uploaded SBOM")
-        else:
-            project, token = upload_bom(identity, bom)
-            # Kopf applies this patch even if the handler raises later (checked on 1.44.5).
-            write_state(patch, {"key": key, "stage": "uploaded", "project": project})
-            logger.info(
-                f"SBOM accepted by Dependency-Track, project {project}, token {token}"
-            )
-        link_project(project, identity, logger)
+        with destination_lock(identity):
+            if project:
+                logger.info("Resuming DefectDojo link of the already uploaded SBOM")
+            else:
+                project, token = upload_bom(identity, bom)
+                # Kopf applies this patch even if the handler raises later (checked on 1.44.5).
+                write_state(
+                    patch, {"key": key, "stage": "uploaded", "project": project}
+                )
+                logger.info(
+                    f"SBOM accepted by Dependency-Track, project {project}, token {token}"
+                )
+            link_project(project, identity, logger)
         write_state(patch, {"key": key, "stage": "linked", "project": project})
     except (kopf.TemporaryError, kopf.PermanentError):
         c.labels("failed").inc()

@@ -176,12 +176,17 @@ Notes:
   skipped and only the DefectDojo/ACL link is retried. The state is patched right after
   the upload, so progress survives a later failure.
 - Errors: network errors, HTTP 5xx, 408 and 429 are temporary (retried up to 10 times,
-  60 s apart). Other unexpected statuses (including 401 and 403), a missing Product Type
+  60 s apart), and so is a 409 on the BOM upload (project created concurrently by
+  another uploader, such as a CI pipeline). Other unexpected statuses (including 401 and 403), a missing Product Type
   or team, ambiguous names and invalid responses are permanent: no retry until the next
   rescan rewrites the report. Messages never contain bodies, query strings or keys.
 - Concurrency has no dedicated limit: deliveries run on the Kopf thread pool (Python
   default, up to `min(32, cpu + 4)` threads). On the first activation many reports can
-  be uploaded at the same time; consider enabling one namespace at a time.
+  be uploaded at the same time; consider enabling one namespace at a time. Reports
+  sharing a DefectDojo Product are delivered one at a time within the operator process,
+  so they do not create the Product, engagement or test twice; while waiting they hold
+  a pool thread. Two uploads creating the same Dependency-Track project at once get a
+  409, which is retried.
 - Metric `dependency_track_reports_total{status="success|failed|skipped"}`.
 
 Known limitations:
